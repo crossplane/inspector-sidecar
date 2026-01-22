@@ -14,8 +14,8 @@ on:
 
 env:
   # Common versions
-  GO_VERSION: '1.23.6'
-  GOLANGCI_VERSION: 'v1.62.0'
+  GO_VERSION: '1.24.9'
+  GOLANGCI_VERSION: 'v2.8.0'
   DOCKER_BUILDX_VERSION: 'v0.23.0'
 
   IMAGE_NAME: ghcr.io/${{ github.repository }}
@@ -38,7 +38,7 @@ jobs:
         run: go mod tidy && git diff --exit-code go.mod go.sum
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
           version: ${{ env.GOLANGCI_VERSION }}
 
