@@ -2,11 +2,9 @@ module github.com/crossplane/inspector-sidecar
 
 go 1.24.9
 
-replace github.com/crossplane/crossplane-runtime/v2 => github.com/phisco/crossplane-runtime/v2 v2.0.0-20260122083359-147d66f5fee9
-
 require (
 	github.com/alecthomas/kong v1.10.0
-	github.com/crossplane/crossplane-runtime/v2 v2.0.0
+	github.com/crossplane/crossplane-runtime/v2 v2.2.0-rc.0.0.20260127103424-627736f1b9f1
 	github.com/go-logr/zapr v1.3.0
 	go.uber.org/zap v1.27.1
 	google.golang.org/grpc v1.75.1
