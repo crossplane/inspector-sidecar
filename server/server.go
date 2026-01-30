@@ -148,7 +148,8 @@ func (i *Inspector) logText(eventType string, meta *pipelinev1alpha1.StepMeta, p
 		_, _ = fmt.Fprintf(i.out, "  XR NS:       %s\n", ns)
 	}
 	_, _ = fmt.Fprintf(i.out, "  Composition: %s\n", meta.GetCompositionName())
-	_, _ = fmt.Fprintf(i.out, "  Function:    %s (step %d, iteration %d)\n", meta.GetFunctionName(), meta.GetStepIndex(), meta.GetIteration())
+	_, _ = fmt.Fprintf(i.out, "  Step:        %s (index %d, iteration %d)\n", meta.GetStepName(), meta.GetStepIndex(), meta.GetIteration())
+	_, _ = fmt.Fprintf(i.out, "  Function:    %s\n", meta.GetFunctionName())
 	_, _ = fmt.Fprintf(i.out, "  Trace ID:    %s\n", meta.GetTraceId())
 	_, _ = fmt.Fprintf(i.out, "  Span ID:     %s\n", meta.GetSpanId())
 	_, _ = fmt.Fprintf(i.out, "  Timestamp:   %s\n", meta.GetTimestamp().AsTime().Format("2006-01-02T15:04:05.000Z07:00"))

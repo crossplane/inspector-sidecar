@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pipelinev1alpha1 "github.com/crossplane/crossplane-runtime/v2/apis/pipelineinspector/proto/v1alpha1"
@@ -144,6 +145,7 @@ func TestEmitRequest_Text(t *testing.T) {
 		CompositeResourceUid:        "uid-123",
 		CompositeResourceNamespace:  "my-namespace",
 		CompositionName:             "my-composition",
+		StepName:                    "my-step",
 		FunctionName:                "my-function",
 		TraceId:                     "trace-abc",
 		SpanId:                      "span-def",
@@ -159,44 +161,23 @@ func TestEmitRequest_Text(t *testing.T) {
 
 	_, _ = inspector.EmitRequest(context.Background(), req)
 
-	output := buf.String()
+	want := `=== REQUEST ===
+  XR:          example.org/v1/XDatabase (my-xr)
+  XR UID:      uid-123
+  XR NS:       my-namespace
+  Composition: my-composition
+  Step:        my-step (index 1, iteration 2)
+  Function:    my-function
+  Trace ID:    trace-abc
+  Span ID:     span-def
+  Timestamp:   2026-01-15T10:30:00.000Z
+  Payload:
+    apiVersion: apiextensions.crossplane.io/v1
 
-	// Verify header.
-	if !strings.Contains(output, "=== REQUEST ===") {
-		t.Errorf("expected REQUEST header, got: %s", output)
-	}
 
-	// Verify XR info.
-	if !strings.Contains(output, "XR:          example.org/v1/XDatabase (my-xr)") {
-		t.Errorf("expected XR info in output, got: %s", output)
-	}
-
-	// Verify UID is included.
-	if !strings.Contains(output, "XR UID:      uid-123") {
-		t.Errorf("expected XR UID in output, got: %s", output)
-	}
-
-	// Verify namespace is included.
-	if !strings.Contains(output, "XR NS:       my-namespace") {
-		t.Errorf("expected XR namespace in output, got: %s", output)
-	}
-
-	// Verify composition name.
-	if !strings.Contains(output, "Composition: my-composition") {
-		t.Errorf("expected composition name in output, got: %s", output)
-	}
-
-	// Verify function info.
-	if !strings.Contains(output, "Function:    my-function (step 1, iteration 2)") {
-		t.Errorf("expected function info in output, got: %s", output)
-	}
-
-	// Verify trace and span IDs.
-	if !strings.Contains(output, "Trace ID:    trace-abc") {
-		t.Errorf("expected trace ID in output, got: %s", output)
-	}
-	if !strings.Contains(output, "Span ID:     span-def") {
-		t.Errorf("expected span ID in output, got: %s", output)
+`
+	if diff := cmp.Diff(want, buf.String()); diff != "" {
+		t.Errorf("EmitRequest text output mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -212,8 +193,9 @@ func TestEmitRequest_Text_NoNamespace(t *testing.T) {
 		CompositeResourceUid:        "uid-456",
 		CompositeResourceNamespace:  "", // Empty for cluster-scoped.
 		CompositionName:             "cluster-composition",
+		StepName:                    "my-step",
 		FunctionName:                "my-function",
-		Timestamp:                   timestamppb.New(time.Now()),
+		Timestamp:                   timestamppb.New(time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)),
 	}
 
 	req := &pipelinev1alpha1.EmitRequestRequest{
@@ -223,11 +205,20 @@ func TestEmitRequest_Text_NoNamespace(t *testing.T) {
 
 	_, _ = inspector.EmitRequest(context.Background(), req)
 
-	output := buf.String()
-
-	// Verify namespace line is NOT included for cluster-scoped resources.
-	if strings.Contains(output, "XR NS:") {
-		t.Errorf("expected no XR NS line for cluster-scoped resource, got: %s", output)
+	want := "=== REQUEST ===\n" +
+		"  XR:          example.org/v1/XClusterDatabase (my-cluster-xr)\n" +
+		"  XR UID:      uid-456\n" +
+		"  Composition: cluster-composition\n" +
+		"  Step:        my-step (index 0, iteration 0)\n" +
+		"  Function:    my-function\n" +
+		"  Trace ID:    \n" +
+		"  Span ID:     \n" +
+		"  Timestamp:   2026-01-15T10:30:00.000Z\n" +
+		"  Payload:\n" +
+		"    {}\n" +
+		"\n\n"
+	if diff := cmp.Diff(want, buf.String()); diff != "" {
+		t.Errorf("EmitRequest text output mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -236,8 +227,12 @@ func TestEmitResponse_Text_WithError(t *testing.T) {
 	inspector := NewInspector("text", WithOutput(&buf))
 
 	meta := &pipelinev1alpha1.StepMeta{
-		FunctionName: "failing-function",
-		Timestamp:    timestamppb.New(time.Now()),
+		CompositeResourceApiVersion: "example.org/v1",
+		CompositeResourceKind:       "XDatabase",
+		CompositeResourceName:       "my-xr",
+		StepName:                    "failing-step",
+		FunctionName:                "failing-function",
+		Timestamp:                   timestamppb.New(time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)),
 	}
 
 	req := &pipelinev1alpha1.EmitResponseRequest{
@@ -248,9 +243,19 @@ func TestEmitResponse_Text_WithError(t *testing.T) {
 
 	_, _ = inspector.EmitResponse(context.Background(), req)
 
-	output := buf.String()
-	if !strings.Contains(output, "Error:       something went wrong") {
-		t.Errorf("expected error in output, got: %s", output)
+	want := "=== RESPONSE ===\n" +
+		"  XR:          example.org/v1/XDatabase (my-xr)\n" +
+		"  XR UID:      \n" +
+		"  Composition: \n" +
+		"  Step:        failing-step (index 0, iteration 0)\n" +
+		"  Function:    failing-function\n" +
+		"  Trace ID:    \n" +
+		"  Span ID:     \n" +
+		"  Timestamp:   2026-01-15T10:30:00.000Z\n" +
+		"  Error:       something went wrong\n" +
+		"\n"
+	if diff := cmp.Diff(want, buf.String()); diff != "" {
+		t.Errorf("EmitResponse text output mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -351,9 +356,9 @@ func TestIndentLines(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := indentLines(tt.input, tt.prefix)
-			if result != tt.expected {
-				t.Errorf("indentLines(%q, %q) = %q, want %q", tt.input, tt.prefix, result, tt.expected)
+			got := indentLines(tt.input, tt.prefix)
+			if diff := cmp.Diff(tt.expected, got); diff != "" {
+				t.Errorf("indentLines(%q, %q) mismatch (-want +got):\n%s", tt.input, tt.prefix, diff)
 			}
 		})
 	}
