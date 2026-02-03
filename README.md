@@ -68,13 +68,21 @@ sidecarsCrossplane:
 
 ### JSON Format (default)
 
+The meta field contains either `compositionMeta` (for XR reconciliation) or `operationMeta` (for standalone operations):
+
 ```json
-{"meta":{"compositeResourceApiVersion":"example.org/v1","compositeResourceKind":"XDatabase","compositeResourceName":"my-db","compositeResourceNamespace":"default","compositeResourceUid":"abc-123","compositionName":"my-composition","functionName":"function-patch-and-transform","iteration":0,"spanId":"span-456","stepIndex":0,"timestamp":"2026-01-15T10:30:00Z","traceId":"trace-789"},"payload":{...},"type":"REQUEST"}
+{"meta":{"compositionMeta":{"compositeResourceApiVersion":"example.org/v1","compositeResourceKind":"XDatabase","compositeResourceName":"my-db","compositeResourceNamespace":"default","compositeResourceUid":"abc-123","compositionName":"my-composition"},"functionName":"function-patch-and-transform","iteration":0,"spanId":"span-456","stepIndex":0,"timestamp":"2026-01-15T10:30:00Z","traceId":"trace-789"},"payload":{...},"type":"REQUEST"}
+```
+
+```json
+{"meta":{"operationMeta":{"operationName":"reconcile","operationUid":"op-uid-123"},"functionName":"function-patch-and-transform","iteration":0,"spanId":"span-456","stepIndex":0,"timestamp":"2026-01-15T10:30:00Z","traceId":"trace-789"},"payload":{...},"type":"REQUEST"}
 ```
 
 ### Text Format
 
-Use `--format=text` for human-readable output:
+Use `--format=text` for human-readable output. The output adapts based on the context type:
+
+#### Composition Context (XR reconciliation)
 
 ```
 === REQUEST ===
@@ -82,12 +90,28 @@ Use `--format=text` for human-readable output:
   XR UID:      abc-123
   XR NS:       default
   Composition: my-composition
-  Function:    function-patch-and-transform (step 0, iteration 0)
+  Step:        my-step (index 0, iteration 0)
+  Function:    function-patch-and-transform
   Trace ID:    trace-789
   Span ID:     span-456
   Timestamp:   2026-01-15T10:30:00.000Z
   Payload:
     apiVersion: apiextensions.crossplane.io/v1
+    ...
+```
+
+#### Operation Context (standalone operations)
+
+```
+=== REQUEST ===
+  Operation:   reconcile
+  Op UID:      op-uid-123
+  Step:        my-step (index 0, iteration 0)
+  Function:    function-patch-and-transform
+  Trace ID:    trace-789
+  Span ID:     span-456
+  Timestamp:   2026-01-15T10:30:00.000Z
+  Payload:
     ...
 ```
 
