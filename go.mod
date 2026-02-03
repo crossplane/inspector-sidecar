@@ -4,7 +4,7 @@ go 1.24.9
 
 require (
 	github.com/alecthomas/kong v1.10.0
-	github.com/crossplane/crossplane-runtime/v2 v2.2.0-rc.0.0.20260130110818-b375c81880a3
+	github.com/crossplane/crossplane-runtime/v2 v2.2.0-rc.0.0.20260203080537-a4cdda495567
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/go-cmp v0.7.0
 	go.uber.org/zap v1.27.1
