@@ -275,6 +275,111 @@ func TestEmitResponse_Text_WithError(t *testing.T) {
 	}
 }
 
+func TestEmitRequest_Text_OperationMeta(t *testing.T) {
+	var buf bytes.Buffer
+	inspector := NewInspector("text", WithOutput(&buf))
+
+	meta := &pipelinev1alpha1.StepMeta{
+		StepName:     "my-operation-step",
+		FunctionName: "my-operation-function",
+		TraceId:      "trace-op-abc",
+		SpanId:       "span-op-def",
+		StepIndex:    0,
+		Iteration:    0,
+		Timestamp:    timestamppb.New(time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)),
+		Context: &pipelinev1alpha1.StepMeta_OperationMeta{
+			OperationMeta: &pipelinev1alpha1.OperationMeta{
+				OperationName: "reconcile",
+				OperationUid:  "op-uid-789",
+			},
+		},
+	}
+
+	req := &pipelinev1alpha1.EmitRequestRequest{
+		Request: []byte(`{"operation":"reconcile"}`),
+		Meta:    meta,
+	}
+
+	_, _ = inspector.EmitRequest(context.Background(), req)
+
+	want := "=== REQUEST ===\n" +
+		"  Operation:   reconcile\n" +
+		"  Op UID:      op-uid-789\n" +
+		"  Step:        my-operation-step (index 0, iteration 0)\n" +
+		"  Function:    my-operation-function\n" +
+		"  Trace ID:    trace-op-abc\n" +
+		"  Span ID:     span-op-def\n" +
+		"  Timestamp:   2026-01-15T10:30:00.000Z\n" +
+		"  Payload:\n" +
+		"    operation: reconcile\n" +
+		"\n\n"
+	if diff := cmp.Diff(want, buf.String()); diff != "" {
+		t.Errorf("EmitRequest text output mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestEmitRequest_JSON_OperationMeta(t *testing.T) {
+	var buf bytes.Buffer
+	inspector := NewInspector("json", WithOutput(&buf))
+
+	meta := &pipelinev1alpha1.StepMeta{
+		TraceId:      "trace-op-123",
+		SpanId:       "span-op-456",
+		StepIndex:    0,
+		Iteration:    0,
+		FunctionName: "function-operation",
+		Timestamp:    timestamppb.New(time.Now()),
+		Context: &pipelinev1alpha1.StepMeta_OperationMeta{
+			OperationMeta: &pipelinev1alpha1.OperationMeta{
+				OperationName: "reconcile",
+				OperationUid:  "op-uid-abc",
+			},
+		},
+	}
+
+	req := &pipelinev1alpha1.EmitRequestRequest{
+		Request: []byte(`{"operation":"reconcile"}`),
+		Meta:    meta,
+	}
+
+	_, err := inspector.EmitRequest(context.Background(), req)
+	if err != nil {
+		t.Fatalf("EmitRequest failed: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, `"type":"REQUEST"`) {
+		t.Errorf("expected type REQUEST in output, got: %s", output)
+	}
+	if !strings.Contains(output, `"functionName":"function-operation"`) {
+		t.Errorf("expected functionName in output, got: %s", output)
+	}
+
+	// Verify it's valid JSON.
+	var result map[string]any
+	if err := json.Unmarshal([]byte(output), &result); err != nil {
+		t.Errorf("output is not valid JSON: %v", err)
+	}
+
+	// Verify meta is included and contains operationMeta.
+	metaVal, ok := result["meta"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected meta field in output, got: %s", output)
+	}
+
+	opMeta, ok := metaVal["operationMeta"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected operationMeta in meta, got: %v", metaVal)
+	}
+
+	if opMeta["operationName"] != "reconcile" {
+		t.Errorf("expected operationName 'reconcile', got: %v", opMeta["operationName"])
+	}
+	if opMeta["operationUid"] != "op-uid-abc" {
+		t.Errorf("expected operationUid 'op-uid-abc', got: %v", opMeta["operationUid"])
+	}
+}
+
 func TestDecodeJSONPayload(t *testing.T) {
 	tests := []struct {
 		name     string

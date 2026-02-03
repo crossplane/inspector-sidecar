@@ -142,13 +142,23 @@ func (i *Inspector) logJSON(eventType string, meta *pipelinev1alpha1.StepMeta, p
 
 func (i *Inspector) logText(eventType string, meta *pipelinev1alpha1.StepMeta, payload any, errMsg string) {
 	_, _ = fmt.Fprintf(i.out, "=== %s ===\n", eventType)
-	cm := meta.GetCompositionMeta()
-	_, _ = fmt.Fprintf(i.out, "  XR:          %s/%s (%s)\n", cm.GetCompositeResourceApiVersion(), cm.GetCompositeResourceKind(), cm.GetCompositeResourceName())
-	_, _ = fmt.Fprintf(i.out, "  XR UID:      %s\n", cm.GetCompositeResourceUid())
-	if ns := cm.GetCompositeResourceNamespace(); ns != "" {
-		_, _ = fmt.Fprintf(i.out, "  XR NS:       %s\n", ns)
+
+	// Handle context-specific fields using type switch (idiomatic for oneofs).
+	switch ctx := meta.GetContext().(type) {
+	case *pipelinev1alpha1.StepMeta_CompositionMeta:
+		cm := ctx.CompositionMeta
+		_, _ = fmt.Fprintf(i.out, "  XR:          %s/%s (%s)\n", cm.GetCompositeResourceApiVersion(), cm.GetCompositeResourceKind(), cm.GetCompositeResourceName())
+		_, _ = fmt.Fprintf(i.out, "  XR UID:      %s\n", cm.GetCompositeResourceUid())
+		if ns := cm.GetCompositeResourceNamespace(); ns != "" {
+			_, _ = fmt.Fprintf(i.out, "  XR NS:       %s\n", ns)
+		}
+		_, _ = fmt.Fprintf(i.out, "  Composition: %s\n", cm.GetCompositionName())
+	case *pipelinev1alpha1.StepMeta_OperationMeta:
+		om := ctx.OperationMeta
+		_, _ = fmt.Fprintf(i.out, "  Operation:   %s\n", om.GetOperationName())
+		_, _ = fmt.Fprintf(i.out, "  Op UID:      %s\n", om.GetOperationUid())
 	}
-	_, _ = fmt.Fprintf(i.out, "  Composition: %s\n", cm.GetCompositionName())
+
 	_, _ = fmt.Fprintf(i.out, "  Step:        %s (index %d, iteration %d)\n", meta.GetStepName(), meta.GetStepIndex(), meta.GetIteration())
 	_, _ = fmt.Fprintf(i.out, "  Function:    %s\n", meta.GetFunctionName())
 	_, _ = fmt.Fprintf(i.out, "  Trace ID:    %s\n", meta.GetTraceId())
