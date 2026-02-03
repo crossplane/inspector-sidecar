@@ -34,18 +34,22 @@ func TestEmitRequest_JSON(t *testing.T) {
 	inspector := NewInspector("json", WithOutput(&buf))
 
 	meta := &pipelinev1alpha1.StepMeta{
-		TraceId:                     "trace-123",
-		SpanId:                      "span-456",
-		StepIndex:                   0,
-		Iteration:                   0,
-		FunctionName:                "function-patch-and-transform",
-		CompositionName:             "my-composition",
-		CompositeResourceUid:        "uid-789",
-		CompositeResourceName:       "my-xr",
-		CompositeResourceNamespace:  "default",
-		CompositeResourceApiVersion: "example.org/v1",
-		CompositeResourceKind:       "XDatabase",
-		Timestamp:                   timestamppb.New(time.Now()),
+		TraceId:      "trace-123",
+		SpanId:       "span-456",
+		StepIndex:    0,
+		Iteration:    0,
+		FunctionName: "function-patch-and-transform",
+		Timestamp:    timestamppb.New(time.Now()),
+		Context: &pipelinev1alpha1.StepMeta_CompositionMeta{
+			CompositionMeta: &pipelinev1alpha1.CompositionMeta{
+				CompositionName:             "my-composition",
+				CompositeResourceUid:        "uid-789",
+				CompositeResourceName:       "my-xr",
+				CompositeResourceNamespace:  "default",
+				CompositeResourceApiVersion: "example.org/v1",
+				CompositeResourceKind:       "XDatabase",
+			},
+		},
 	}
 
 	req := &pipelinev1alpha1.EmitRequestRequest{
@@ -139,19 +143,23 @@ func TestEmitRequest_Text(t *testing.T) {
 	inspector := NewInspector("text", WithOutput(&buf))
 
 	meta := &pipelinev1alpha1.StepMeta{
-		CompositeResourceApiVersion: "example.org/v1",
-		CompositeResourceKind:       "XDatabase",
-		CompositeResourceName:       "my-xr",
-		CompositeResourceUid:        "uid-123",
-		CompositeResourceNamespace:  "my-namespace",
-		CompositionName:             "my-composition",
-		StepName:                    "my-step",
-		FunctionName:                "my-function",
-		TraceId:                     "trace-abc",
-		SpanId:                      "span-def",
-		StepIndex:                   1,
-		Iteration:                   2,
-		Timestamp:                   timestamppb.New(time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)),
+		StepName:     "my-step",
+		FunctionName: "my-function",
+		TraceId:      "trace-abc",
+		SpanId:       "span-def",
+		StepIndex:    1,
+		Iteration:    2,
+		Timestamp:    timestamppb.New(time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)),
+		Context: &pipelinev1alpha1.StepMeta_CompositionMeta{
+			CompositionMeta: &pipelinev1alpha1.CompositionMeta{
+				CompositeResourceApiVersion: "example.org/v1",
+				CompositeResourceKind:       "XDatabase",
+				CompositeResourceName:       "my-xr",
+				CompositeResourceUid:        "uid-123",
+				CompositeResourceNamespace:  "my-namespace",
+				CompositionName:             "my-composition",
+			},
+		},
 	}
 
 	req := &pipelinev1alpha1.EmitRequestRequest{
@@ -187,15 +195,19 @@ func TestEmitRequest_Text_NoNamespace(t *testing.T) {
 
 	// Cluster-scoped resource has empty namespace.
 	meta := &pipelinev1alpha1.StepMeta{
-		CompositeResourceApiVersion: "example.org/v1",
-		CompositeResourceKind:       "XClusterDatabase",
-		CompositeResourceName:       "my-cluster-xr",
-		CompositeResourceUid:        "uid-456",
-		CompositeResourceNamespace:  "", // Empty for cluster-scoped.
-		CompositionName:             "cluster-composition",
-		StepName:                    "my-step",
-		FunctionName:                "my-function",
-		Timestamp:                   timestamppb.New(time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)),
+		StepName:     "my-step",
+		FunctionName: "my-function",
+		Timestamp:    timestamppb.New(time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)),
+		Context: &pipelinev1alpha1.StepMeta_CompositionMeta{
+			CompositionMeta: &pipelinev1alpha1.CompositionMeta{
+				CompositeResourceApiVersion: "example.org/v1",
+				CompositeResourceKind:       "XClusterDatabase",
+				CompositeResourceName:       "my-cluster-xr",
+				CompositeResourceUid:        "uid-456",
+				CompositeResourceNamespace:  "", // Empty for cluster-scoped.
+				CompositionName:             "cluster-composition",
+			},
+		},
 	}
 
 	req := &pipelinev1alpha1.EmitRequestRequest{
@@ -227,12 +239,16 @@ func TestEmitResponse_Text_WithError(t *testing.T) {
 	inspector := NewInspector("text", WithOutput(&buf))
 
 	meta := &pipelinev1alpha1.StepMeta{
-		CompositeResourceApiVersion: "example.org/v1",
-		CompositeResourceKind:       "XDatabase",
-		CompositeResourceName:       "my-xr",
-		StepName:                    "failing-step",
-		FunctionName:                "failing-function",
-		Timestamp:                   timestamppb.New(time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)),
+		StepName:     "failing-step",
+		FunctionName: "failing-function",
+		Timestamp:    timestamppb.New(time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)),
+		Context: &pipelinev1alpha1.StepMeta_CompositionMeta{
+			CompositionMeta: &pipelinev1alpha1.CompositionMeta{
+				CompositeResourceApiVersion: "example.org/v1",
+				CompositeResourceKind:       "XDatabase",
+				CompositeResourceName:       "my-xr",
+			},
+		},
 	}
 
 	req := &pipelinev1alpha1.EmitResponseRequest{

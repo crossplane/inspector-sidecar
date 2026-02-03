@@ -142,12 +142,13 @@ func (i *Inspector) logJSON(eventType string, meta *pipelinev1alpha1.StepMeta, p
 
 func (i *Inspector) logText(eventType string, meta *pipelinev1alpha1.StepMeta, payload any, errMsg string) {
 	_, _ = fmt.Fprintf(i.out, "=== %s ===\n", eventType)
-	_, _ = fmt.Fprintf(i.out, "  XR:          %s/%s (%s)\n", meta.GetCompositeResourceApiVersion(), meta.GetCompositeResourceKind(), meta.GetCompositeResourceName())
-	_, _ = fmt.Fprintf(i.out, "  XR UID:      %s\n", meta.GetCompositeResourceUid())
-	if ns := meta.GetCompositeResourceNamespace(); ns != "" {
+	cm := meta.GetCompositionMeta()
+	_, _ = fmt.Fprintf(i.out, "  XR:          %s/%s (%s)\n", cm.GetCompositeResourceApiVersion(), cm.GetCompositeResourceKind(), cm.GetCompositeResourceName())
+	_, _ = fmt.Fprintf(i.out, "  XR UID:      %s\n", cm.GetCompositeResourceUid())
+	if ns := cm.GetCompositeResourceNamespace(); ns != "" {
 		_, _ = fmt.Fprintf(i.out, "  XR NS:       %s\n", ns)
 	}
-	_, _ = fmt.Fprintf(i.out, "  Composition: %s\n", meta.GetCompositionName())
+	_, _ = fmt.Fprintf(i.out, "  Composition: %s\n", cm.GetCompositionName())
 	_, _ = fmt.Fprintf(i.out, "  Step:        %s (index %d, iteration %d)\n", meta.GetStepName(), meta.GetStepIndex(), meta.GetIteration())
 	_, _ = fmt.Fprintf(i.out, "  Function:    %s\n", meta.GetFunctionName())
 	_, _ = fmt.Fprintf(i.out, "  Trace ID:    %s\n", meta.GetTraceId())
