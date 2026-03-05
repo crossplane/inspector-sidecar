@@ -47,7 +47,7 @@ extraVolumeMountsCrossplane:
 
 sidecarsCrossplane:
   - name: pipeline-inspector
-    image: xpkg.crossplane.io/crossplane/inspector-sidecar:latest
+    image: xpkg.crossplane.io/crossplane/inspector-sidecar:v0.0.3
     args:
       - --format=json
       # Increase if your function payloads exceed 4MB
